@@ -5,22 +5,29 @@ const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 800;
 char title[64] = "My game";
 
-const int cells = 20;
+const int cells = 12;
 int cell_x = 0;
 int cell_y = 0;
 
-char dir[6] = "RIGHT";
+Vector2 dir;
 
 int main(int argc, int arv[])
 {
+    SetTargetFPS(60);
+
     int cell_width = WINDOW_WIDTH / cells;
     int cell_height = WINDOW_HEIGHT / cells;
 
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, title);
-    SetTargetFPS(16);
 
+    // track time elapsed since last direction update
+    // and set threshold for how often direction should be updated
     float elapsed = 0.0f;
-    float move_threshold = 0.125f;
+    float move_threshold = 0.1f;
+
+    // set initial move direction towards right side
+    dir.x = 1;
+    dir.y = 0;
 
     bool game_over = false;
     while (!WindowShouldClose())
@@ -31,47 +38,45 @@ int main(int argc, int arv[])
 
         // only move snake every move_threshold seconds
         elapsed += GetFrameTime();
-        if (elapsed >= move_threshold && !game_over)
-        {
-            if (strcmp(dir, "LEFT") == 0)
-            {
-                if (cell_x == 0) game_over = true;
-                cell_x -= 1;
-            }
-            else if (strcmp(dir, "RIGHT") == 0)
-            {
-                if (cell_x == cells - 1) game_over = true;
-                cell_x += 1;
-            }
-            else if (strcmp(dir, "UP") == 0)
-            {
-                if (cell_y == 0) game_over = true;
-                cell_y -= 1;
-            }
-            else if (strcmp(dir, "DOWN") == 0)
-            {
-                if (cell_y == cells - 1) game_over = true;
-                cell_y += 1;
-            }
 
+        // process every move interval that elapsed since the last frame.
+        // since multiple intervals can elapse during a single frame if a large frametime occurs
+        // use a while loop to catch up without moving early on a subsequent frame.
+        while (elapsed >= move_threshold)
+        {
+            if (!game_over)
+            {
+                cell_x += dir.x;
+                cell_y += dir.y;
+
+                if (cell_x < 0 || cell_x >= cells || cell_y < 0 || cell_y >= cells)
+                {
+                    game_over = true;
+                }
+            }
+            
             elapsed -= move_threshold;
         }
 
         if (IsKeyPressed(KEY_W))
         {
-            strcpy_s(dir, 6, "UP");
+            dir.x = 0;
+            dir.y = -1;
         }
         if (IsKeyPressed(KEY_A))
         {
-            strcpy_s(dir, 6, "LEFT");
+            dir.x = -1;
+            dir.y = 0;
         }
-        if (IsKeyDown(KEY_S))
+        if (IsKeyPressed(KEY_S))
         {
-            strcpy_s(dir, 6, "DOWN");
+            dir.x = 0;
+            dir.y = 1;
         }
         if (IsKeyPressed(KEY_D))
         {
-            strcpy_s(dir, 6, "RIGHT");
+            dir.x = 1;
+            dir.y = 0;
         }
 
         // update render every frame
@@ -102,9 +107,14 @@ int main(int argc, int arv[])
             if (IsKeyPressed(KEY_Y))
             {
                 game_over = false;
+                
+                elapsed = 0.0f;
+
                 cell_x = 0;
                 cell_y = 0;
-                strcpy_s(dir, 6, "RIGHT");
+
+                dir.x = 1;
+                dir.y = 0;
             }
             else if (IsKeyPressed(KEY_N))
             {
